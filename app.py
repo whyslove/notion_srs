@@ -1,5 +1,6 @@
 import requests
 import asyncio
+from aioconsole import ainput
 
 from datetime import datetime
 from core.notion_api import Notion
@@ -51,8 +52,7 @@ async def start_app():
         # ans = input("[s] - start quize, [n] - add new words, [q] - quit\n").lower()
         ans = "s"
         if ans == "s":
-            # start_quize()
-            await db.get_cards()
+            await start_quize(db)
         elif ans == "n":
             add_new_words()
         elif ans == "q":
@@ -60,7 +60,35 @@ async def start_app():
             print("Thanks for using!")
             continue
         else:
-            print("Unrecognizible character, please answer question again")
+            print("Unrecognizible character, please answer the question again \n")
+
+
+async def start_quize(db) -> None:
+    print(
+        """Rules of quize: you get a card in foreign language, press [ENTER] to flip it,
+after you see the word in native, press [ENTER] - if you correct and type any other key if you incorrect"""
+    )
+
+    stop_quize = False
+    asyncio.create_task(db._download_cards())
+    card = await db.get_card()
+    while card is not None and stop_quize is False:
+        print(str(card.native))
+        ans = await ainput()
+        print(str(card.foreign))
+        ans = await ainput("Are you correct?")
+        if ans == "":
+            card.level = int(card.level) + 1
+            card.correct = True
+        elif ans == "i":
+            card.level = 0
+            card.correct = False
+        elif ans == "quit":
+            stop_quize = True
+            return None
+        asyncio.create_task(db.update_card(card))
+        card = await db.get_card()
+    print("All words for today are gone, congratulations!")
 
 
 if __name__ == "__main__":
