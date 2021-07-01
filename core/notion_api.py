@@ -1,9 +1,5 @@
 import asyncio
-import json
 import aiohttp
-import json
-
-from aiohttp.connector import NamedPipeConnector
 
 from loguru import logger
 from datetime import datetime
@@ -22,21 +18,22 @@ HEADERS = {
     "Content-Type": "application/json",
 }
 
-#  def
+
 class Notion:
     def __init__(self) -> None:
-        self.DATABASE_ID = settings.database_id
+        self.DATABASE_ID = settings.database_id  # Id in Notion
         self.session = aiohttp.ClientSession()
         self.start_cursor = None
-        self.cards = asyncio.Queue()  # will be asyncio.Queue
+        self.cards = asyncio.Queue()
 
-    async def get_card(self) -> Card:
+    async def get_next_card(self) -> Card:
         card = await self.cards.get()
         if card.page_id == "END":
             return None
         return card
 
     async def _download_cards(self) -> None:
+        """Function to perform downloading cards from Notion and stores them in self.cards"""
         end_of_cards = False
         while end_of_cards is False:
             async with self.session.post(
@@ -64,7 +61,7 @@ class Notion:
                     self.start_cursor = resp["next_cursor"]
 
     async def get_page_body(self, page_id: str):
-        """Returns foreign writen in main body of page"""
+        """Returns foreign word writen in main body of page"""
         page_id = ("").join(page_id.split("-"))
         async with self.session.get(
             url=f"https://api.notion.com/v1/blocks/{page_id}/children",
@@ -96,7 +93,7 @@ class Notion:
                 logger.error(f"{await resp.json()}")
 
     def get_json_download_cards(self) -> dict:
-        # Start_cursor should be undefined to get 1st page, so this function performs beauty
+        # Start_cursor should be undefined to get 1st page, so this function needs for readbility
         if self.start_cursor == None:
             return {
                 "filter": FILTER_CONDITION,
