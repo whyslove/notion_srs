@@ -39,7 +39,7 @@ class Notion:
             async with self.session.post(
                 url=f"https://api.notion.com/v1/databases/{self.DATABASE_ID}/query",
                 headers=HEADERS,
-                json=self.get_json_download_cards(),
+                json=self.compute_json_download_cards(),
             ) as resp:
                 if resp.status != 200:
                     logger.error(f"{await resp.json()}")
@@ -92,16 +92,40 @@ class Notion:
             if resp.status != 200:
                 logger.error(f"{await resp.json()}")
 
-    def get_json_download_cards(self) -> dict:
+    async def add_card(self, card: Card) -> None:
+        json = {
+            "parent": {"database_id": self.DATABASE_ID},
+            "properties": {
+                "Name": {"title": [{"text": {"content": card.native}}]},
+                "Level": {"select": {"name": str(1)}},
+                "Date Wrong": {
+                    "date": {"start": str(datetime.now().strftime("%Y-%m-%d"))}
+                },
+            },
+            "children": [
+                {
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "text": [{"type": "text", "text": {"content": card.foreign}}],
+                    },
+                }
+            ],
+        }
+        async with self.session.post(
+            url="https://api.notion.com/v1/pages", headers=HEADERS, json=json
+        ) as resp:
+            if resp.status != 200:
+                logger.error(f"{await resp.json()}")
+
+    def compute_json_download_cards(self) -> dict:
         # Start_cursor should be undefined to get 1st page, so this function needs for readbility
         if self.start_cursor == None:
             return {
                 "filter": FILTER_CONDITION,
-                "page_size": 2,
             }
         else:
             return {
                 "start_cursor": self.start_cursor,
                 "filter": FILTER_CONDITION,
-                "page_size": 2,
             }

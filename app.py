@@ -4,6 +4,7 @@ from aioconsole import ainput
 from datetime import datetime
 
 from core.notion_api import Notion
+from core.models import Card
 
 
 async def start_app():
@@ -15,7 +16,7 @@ async def start_app():
         if ans == "s":
             await start_quize(db)
         elif ans == "n":
-            add_new_words()
+            await add_new_words(db)
         elif ans == "q":
             stop = True
             print("Thanks for using!")
@@ -37,9 +38,9 @@ After you see the word in native, press [ENTER] - if you correct, type [q] for q
     asyncio.create_task(db._download_cards())
     card = await db.get_next_card()
     while card is not None and stop_quize is False:
-        card_native = "".join(card.native)
-        print(card_native)
-        ans = await ainput("-" * len(card_native))
+        # card_native = "".join(card.native)
+        print(card.native)
+        ans = await ainput("-" * len(card.native))
         print(str(card.foreign), "\n")
         ans = await ainput("Are you correct? ")
         print("\n==================")
@@ -55,6 +56,23 @@ After you see the word in native, press [ENTER] - if you correct, type [q] for q
         asyncio.create_task(db.update_card(card))
         card = await db.get_next_card()
     print("All words for today are gone, congratulations!\n")
+
+
+async def add_new_words(db):
+    print("==========================")
+    print("Here you can add new words")
+    stop = False
+    while stop is False:
+        native = await ainput("Enter word in native language: ")
+        foreign = await ainput("Enter word in foreign language: ")
+        new_card = Card(
+            page_id="", native=native, foreign=foreign, level=1, date_wrong=""
+        )
+        asyncio.create_task(db.add_card(new_card))
+        ans = await ainput("Continue? Type [ENTER] to agree, any other key to stop ")
+        if ans != "":
+            stop = True
+        print("===========================")
 
 
 if __name__ == "__main__":
