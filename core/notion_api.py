@@ -3,6 +3,7 @@ import aiohttp
 
 from loguru import logger
 from datetime import datetime
+from typing import Optional
 
 from settings import settings
 from core.models import Card
@@ -26,7 +27,7 @@ class Notion:
         self.start_cursor = None
         self.cards = None  # will be asyncio.Queue
 
-    async def get_next_card(self) -> Card:
+    async def get_next_card(self) -> Optional[Card]:
         if self.cards == None:
             self.cards = asyncio.Queue()
             asyncio.create_task(self._download_cards())
@@ -46,6 +47,7 @@ class Notion:
             ) as resp:
                 if resp.status != 200:
                     logger.error(f"{await resp.json()}")
+                    raise KeyError("Error, check logs for more information")
                 resp = await resp.json()
                 for card in resp["results"]:
                     page_id = card["id"]
@@ -54,7 +56,13 @@ class Notion:
                     level = card["properties"]["Level"]["select"]["name"]
                     date_wrong = card["properties"]["Date Wrong"]["date"]["start"]
                     await self.cards.put(
-                        Card(page_id, native, foreign, level, date_wrong)
+                        Card(
+                            page_id=page_id,
+                            native=native,
+                            foreign=foreign,
+                            level=level,
+                            date_wrong=date_wrong,
+                        )
                     )
 
                 if resp.get("next_cursor") is None:
@@ -63,7 +71,7 @@ class Notion:
                 else:
                     self.start_cursor = resp["next_cursor"]
 
-    async def get_page_body(self, page_id: str):
+    async def get_page_body(self, page_id: str) -> str:
         """Returns foreign word writen in main body of page"""
         page_id = ("").join(page_id.split("-"))
         async with self.session.get(
