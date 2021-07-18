@@ -1,4 +1,5 @@
 import asyncio
+from asyncio.coroutines import coroutine
 
 from aioconsole import ainput
 from datetime import datetime
@@ -33,7 +34,7 @@ After you see the word in native, press [ENTER] - if you correct, type [q] for q
     )
 
     abort_quize = False
-    task = asyncio.create_task(db._download_cards())
+    task = None  # to handle situations while we want to quit no answering any word
     card = await db.get_next_card()
     while card is not None and abort_quize is False:
         print(card.native)
@@ -49,9 +50,11 @@ After you see the word in native, press [ENTER] - if you correct, type [q] for q
             card.correct = False
         elif ans == "q":
             abort_quize = True
+            if task != None:
+                print("Please, waint untill all words will be updated")
+                await task
         task = asyncio.create_task(db.update_card(card))
         card = await db.get_next_card()
-    await task
     print("All words for today are gone, congratulations!\n")
 
 

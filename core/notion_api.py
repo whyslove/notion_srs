@@ -24,9 +24,12 @@ class Notion:
         self.DATABASE_ID = settings.database_id  # Id in Notion
         self.session = aiohttp.ClientSession()
         self.start_cursor = None
-        self.cards = asyncio.Queue()
+        self.cards = None  # will be asyncio.Queue
 
     async def get_next_card(self) -> Card:
+        if self.cards == None:
+            self.cards = asyncio.Queue()
+            asyncio.create_task(self._download_cards())
         card = await self.cards.get()
         if card.page_id == "END":
             return None
