@@ -8,19 +8,17 @@ from core.models import Card
 
 
 async def start_app():
-    stop = False
     db = Notion()
     print("Hello! Welcome to terminal version of Spaced Repetion System")
-    while stop is False:
+    while True:
         ans = await ainput("[s] - start quize, [n] - add new words, [q] - quit\n")
         if ans == "s":
             await start_quize(db)
         elif ans == "n":
             await add_new_words(db)
         elif ans == "q":
-            stop = True
             print("Thanks for using!")
-            continue
+            break
         else:
             print("Unrecognizible character, please answer the question again \n")
     await db.session.close()
@@ -34,11 +32,10 @@ After you see the word in native, press [ENTER] - if you correct, type [q] for q
 ================================================================================================="""
     )
 
-    stop_quize = False
-    asyncio.create_task(db._download_cards())
+    abort_quize = False
+    task = asyncio.create_task(db._download_cards())
     card = await db.get_next_card()
-    while card is not None and stop_quize is False:
-        # card_native = "".join(card.native)
+    while card is not None and abort_quize is False:
         print(card.native)
         ans = await ainput("-" * len(card.native))
         print(str(card.foreign), "\n")
@@ -51,27 +48,28 @@ After you see the word in native, press [ENTER] - if you correct, type [q] for q
             card.level = 1
             card.correct = False
         elif ans == "q":
-            stop_quize = True
-            return None
-        asyncio.create_task(db.update_card(card))
+            abort_quize = True
+        task = asyncio.create_task(db.update_card(card))
         card = await db.get_next_card()
+    await task
     print("All words for today are gone, congratulations!\n")
 
 
 async def add_new_words(db):
     print("==========================")
     print("Here you can add new words")
-    stop = False
-    while stop is False:
+    while True:
         native = await ainput("Enter word in native language: ")
         foreign = await ainput("Enter word in foreign language: ")
         new_card = Card(
             page_id="", native=native, foreign=foreign, level=1, date_wrong=""
         )
-        asyncio.create_task(db.add_card(new_card))
+        task = asyncio.create_task(db.add_card(new_card))
         ans = await ainput("Continue? Type [ENTER] to agree, any other key to stop ")
         if ans != "":
-            stop = True
+            print("Wait untill all words will be saved")
+            await task
+            break
         print("===========================")
 
 
