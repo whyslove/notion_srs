@@ -2,7 +2,7 @@ import asyncio
 import aiohttp
 
 from loguru import logger
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from settings import settings
@@ -66,7 +66,7 @@ class Notion:
                     )
 
                 if resp.get("next_cursor") is None:
-                    await self.cards.put(Card("END", "", "", -1, ""))
+                    await self.cards.put(Card(page_id="END", native="", foreign="", level=-1, date_wrong=""))
                     end_of_cards = True
                 else:
                     self.start_cursor = resp["next_cursor"]

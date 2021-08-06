@@ -45,14 +45,14 @@ After you see the word in native, press [ENTER] - if you correct, type [q] for q
         if ans == "":
             card.level = int(card.level) + 1
             card.correct = True
-        elif ans == "i":
-            card.level = 1
-            card.correct = False
         elif ans == "q":
             abort_quize = True
             if task != None:
                 print("Please, waint untill all words will be updated")
                 await task
+        else:
+            card.level = 1
+            card.correct = False
         task = asyncio.create_task(db.update_card(card))
         card = await db.get_next_card()
     print("All words for today are gone, congratulations!\n")
